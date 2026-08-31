@@ -9,6 +9,7 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
+        "NSCameraUsageDescription": "IrishDrive AI requests camera access for future driving-session capabilities. This build does not record camera input.",
         "NSLocationWhenInUseUsageDescription": "IrishDrive AI uses your location during a practice session to record raw GPS speed, distance travelled, and GPS accuracy."
       }
     },

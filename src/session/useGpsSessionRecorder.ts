@@ -3,48 +3,8 @@ import { AppState } from 'react-native';
 import * as Location from 'expo-location';
 
 import { distanceBetweenSamplesMeters } from './distance';
+import { calculateElapsedSeconds, initialGpsState, toGpsErrorMessage, toGpsSample } from './gpsUtils';
 import type { ActiveSessionGpsState, GpsRecordingStatus, GpsSample, StartGpsRecordingResult } from './models';
-
-const initialGpsState: ActiveSessionGpsState = {
-  status: 'idle',
-  errorMessage: null,
-  samples: [],
-  sampleCount: 0,
-  distanceMeters: 0,
-  latestSpeedMps: null,
-  latestAccuracyMeters: null,
-  elapsedSeconds: 0,
-  startedAtMs: null,
-};
-
-function calculateElapsedSeconds(startedAtMs: number | null): number {
-  if (!startedAtMs) {
-    return 0;
-  }
-
-  return Math.max(0, Math.floor((Date.now() - startedAtMs) / 1000));
-}
-
-function toSample(location: Location.LocationObject): GpsSample {
-  const accuracy = location.coords.accuracy;
-  const speed = location.coords.speed;
-
-  return {
-    timestamp: Date.now(),
-    latitude: location.coords.latitude,
-    longitude: location.coords.longitude,
-    accuracyMeters: typeof accuracy === 'number' && Number.isFinite(accuracy) ? accuracy : null,
-    speedMps: typeof speed === 'number' && Number.isFinite(speed) && speed >= 0 ? speed : null,
-  };
-}
-
-function toErrorMessage(error: unknown): string {
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  return 'GPS data unavailable. Please try again.';
-}
 
 export function useGpsSessionRecorder() {
   const [gpsState, setGpsState] = useState<ActiveSessionGpsState>(initialGpsState);
@@ -149,7 +109,7 @@ export function useGpsSessionRecorder() {
           mayShowUserSettingsDialog: true,
         },
         (locationUpdate) => {
-          const sample = toSample(locationUpdate);
+          const sample = toGpsSample(locationUpdate);
 
           setGpsState((previousState) => {
             let nextDistanceMeters = previousState.distanceMeters;
@@ -179,10 +139,10 @@ export function useGpsSessionRecorder() {
 
       return { ok: true };
     } catch (error) {
-      stopRecording('error', `Unable to start GPS recording. ${toErrorMessage(error)}`);
+      stopRecording('error', `Unable to start GPS recording. ${toGpsErrorMessage(error)}`);
       return {
         ok: false,
-        message: `Unable to start GPS recording. ${toErrorMessage(error)}`,
+        message: `Unable to start GPS recording. ${toGpsErrorMessage(error)}`,
       };
     }
   }, [clearTimer, stopRecording]);

@@ -30,8 +30,8 @@ const onboardingSteps: OnboardingStep[] = [
     body:
       'Camera, GPS, and motion-sensor permissions are not requested during onboarding. You will see in-context explanations before any future permission prompt.',
     points: [
-      'Camera analysis is not implemented in this milestone.',
-      'GPS and sensor capture belong to later milestones and are not active yet.',
+      'Camera permission can be reviewed later in session setup, but camera capture is not implemented in this build.',
+      'GPS and motion sensors are requested only when starting an active practice session.',
     ],
   },
   {
@@ -40,7 +40,7 @@ const onboardingSteps: OnboardingStep[] = [
     body:
       'Keep the phone mounted and avoid interacting with it while driving. IrishDrive AI will collect only the data needed for the feature being used.',
     points: [
-      'This foundation milestone does not record trips or generate driving scores.',
+      'Current milestones record local telemetry and detected IrishDrive events only; scoring is still disabled.',
       'Future data handling must stay aligned with the project documentation and privacy principles.',
     ],
   },

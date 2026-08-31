@@ -63,9 +63,9 @@ export function HomeScreen({ onStartSession }: HomeScreenProps) {
           body="Active sessions record raw GPS samples locally, including timestamp, location, speed where available, and GPS accuracy."
         />
         <StatusCard
-          label="Not active yet"
+          label="Available now"
           title="Permissions and sensing"
-          body="Camera permissions are deferred until later milestones. Motion sensors run during active sessions."
+          body="Camera permission can now be reviewed in session setup. Camera capture still remains disabled while GPS and motion sensors run during active sessions."
         />
         <StatusCard
           label="Not active yet"

@@ -7,6 +7,7 @@ import { OnboardingScreen } from '../screens/OnboardingScreen';
 import { SessionActiveScreen } from '../screens/SessionActiveScreen';
 import { SessionSetupScreen } from '../screens/SessionSetupScreen';
 import type { DeveloperSimulationScenario } from '../session/eventModels';
+import { useCameraPermissionState } from '../session/useCameraPermissionState';
 import { useDrivingEventDetection } from '../session/useDrivingEventDetection';
 import { useGpsSessionRecorder } from '../session/useGpsSessionRecorder';
 import { useMotionSessionRecorder } from '../session/useMotionSessionRecorder';
@@ -30,6 +31,12 @@ export function AppRoot() {
   const [currentScreen, setCurrentScreen] = useState<AppScreen>('home');
   const [activeSession, setActiveSession] = useState<LocalDrivingSession | null>(null);
   const [developerSimulationScenario, setDeveloperSimulationScenario] = useState<DeveloperSimulationScenario | null>(null);
+  const {
+    cameraPermissionState,
+    isRefreshing: isRefreshingCameraPermission,
+    openSettings: openCameraSettings,
+    requestPermission: requestCameraPermission,
+  } = useCameraPermissionState();
   const { gpsState, startRecording, stopRecording } = useGpsSessionRecorder();
   const {
     motionState,
@@ -140,8 +147,12 @@ export function AppRoot() {
         ) : null}
         {!isLoading && !hasError && hasCompletedOnboarding && currentScreen === 'session-setup' ? (
           <SessionSetupScreen
+            cameraPermissionState={cameraPermissionState}
+            isRefreshingCameraPermission={isRefreshingCameraPermission}
             isStartingSession={isStartingSession}
             onBack={handleCancelSessionSetup}
+            onOpenCameraSettings={openCameraSettings}
+            onRequestCameraPermission={requestCameraPermission}
             onStartSession={handleStartSession}
             startErrorMessage={sessionSetupError}
           />

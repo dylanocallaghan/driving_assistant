@@ -1,9 +1,15 @@
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import type { CameraPermissionState } from '../session/cameraPermissionUtils';
+
 type SessionSetupScreenProps = {
+  cameraPermissionState: CameraPermissionState;
+  isRefreshingCameraPermission: boolean;
   isStartingSession: boolean;
   onBack: () => void;
+  onOpenCameraSettings: () => Promise<void>;
+  onRequestCameraPermission: () => Promise<void>;
   onStartSession: () => Promise<void>;
   startErrorMessage: string | null;
 };
@@ -34,7 +40,16 @@ const checkItems: CheckItem[] = [
   },
 ];
 
-export function SessionSetupScreen({ isStartingSession, onBack, onStartSession, startErrorMessage }: SessionSetupScreenProps) {
+export function SessionSetupScreen({
+  cameraPermissionState,
+  isRefreshingCameraPermission,
+  isStartingSession,
+  onBack,
+  onOpenCameraSettings,
+  onRequestCameraPermission,
+  onStartSession,
+  startErrorMessage,
+}: SessionSetupScreenProps) {
   const [checks, setChecks] = useState<Record<CheckKey, boolean>>({
     mounted: false,
     stationary: false,
@@ -66,6 +81,40 @@ export function SessionSetupScreen({ isStartingSession, onBack, onStartSession, 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Pre-drive checks</Text>
         <Text style={styles.sectionBody}>Complete each confirmation before starting a practice session.</Text>
+      </View>
+
+      <View style={styles.cameraCard}>
+        <Text style={styles.cameraTitle}>Camera permission</Text>
+        <Text style={styles.cameraBody}>{cameraPermissionState.title}</Text>
+        <Text style={styles.cameraMeta}>{cameraPermissionState.body}</Text>
+        {cameraPermissionState.errorMessage ? <Text style={styles.cameraError}>{cameraPermissionState.errorMessage}</Text> : null}
+        <View style={styles.cameraActionsColumn}>
+          {cameraPermissionState.canRequestPermission ? (
+            <Pressable
+              accessibilityRole="button"
+              disabled={isRefreshingCameraPermission || isStartingSession}
+              onPress={() => {
+                void onRequestCameraPermission();
+              }}
+              style={[styles.cameraPrimaryButton, isRefreshingCameraPermission || isStartingSession ? styles.buttonDisabled : null]}
+            >
+              <Text style={styles.cameraPrimaryButtonText}>{isRefreshingCameraPermission ? 'Checking camera permission...' : 'Review camera permission'}</Text>
+            </Pressable>
+          ) : null}
+
+          {cameraPermissionState.shouldOpenSettings ? (
+            <Pressable
+              accessibilityRole="button"
+              disabled={isStartingSession}
+              onPress={() => {
+                void onOpenCameraSettings();
+              }}
+              style={[styles.cameraSecondaryButton, isStartingSession ? styles.buttonDisabled : null]}
+            >
+              <Text style={styles.cameraSecondaryButtonText}>Open camera settings</Text>
+            </Pressable>
+          ) : null}
+        </View>
       </View>
 
       <View style={styles.cardsColumn}>
@@ -100,7 +149,7 @@ export function SessionSetupScreen({ isStartingSession, onBack, onStartSession, 
           Requests foreground location permission, then starts local GPS, accelerometer, and gyroscope recording with timestamped samples.
         </Text>
         <Text style={styles.summaryBody}>
-          It does not request camera permissions, does not assess faults, and does not send data to backend services.
+          Camera permission can be reviewed here for future capabilities. This build still does not record camera input, does not assess faults, and does not send data to backend services.
         </Text>
       </View>
 
@@ -182,6 +231,62 @@ const styles = StyleSheet.create({
   },
   cardsColumn: {
     gap: 14,
+  },
+  cameraCard: {
+    backgroundColor: '#fff7ed',
+    borderRadius: 20,
+    padding: 18,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#fdba74',
+  },
+  cameraTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#9a3412',
+  },
+  cameraBody: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: '#7c2d12',
+  },
+  cameraMeta: {
+    fontSize: 14,
+    lineHeight: 21,
+    color: '#9a3412',
+  },
+  cameraError: {
+    fontSize: 13,
+    lineHeight: 20,
+    color: '#991b1b',
+  },
+  cameraActionsColumn: {
+    gap: 10,
+    marginTop: 2,
+  },
+  cameraPrimaryButton: {
+    backgroundColor: '#ea580c',
+    borderRadius: 12,
+    paddingVertical: 13,
+    alignItems: 'center',
+  },
+  cameraPrimaryButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  cameraSecondaryButton: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    paddingVertical: 13,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#fdba74',
+  },
+  cameraSecondaryButtonText: {
+    color: '#9a3412',
+    fontSize: 14,
+    fontWeight: '700',
   },
   checkCard: {
     backgroundColor: '#ffffff',
