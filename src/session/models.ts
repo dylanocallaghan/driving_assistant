@@ -14,6 +14,31 @@ export type GpsSample = {
   speedMps: number | null;
 };
 
+export type MotionRecordingStatus = 'idle' | 'recording' | 'unavailable' | 'error' | 'stopped';
+
+export type MotionSample = {
+  timestamp: number;
+  x: number;
+  y: number;
+  z: number;
+};
+
+export type MotionStreamState = {
+  status: MotionRecordingStatus;
+  errorMessage: string | null;
+  samples: MotionSample[];
+  sampleCount: number;
+  latestSample: MotionSample | null;
+  latestMagnitude: number | null;
+  peakMagnitude: number;
+};
+
+export type ActiveSessionMotionState = {
+  accelerometer: MotionStreamState;
+  gyroscope: MotionStreamState;
+  startedAtMs: number | null;
+};
+
 export type ActiveSessionGpsState = {
   status: GpsRecordingStatus;
   errorMessage: string | null;
@@ -32,3 +57,7 @@ export type StartGpsRecordingResult =
       ok: false;
       message: string;
     };
+
+export type StartMotionRecordingResult = {
+  ok: true;
+};

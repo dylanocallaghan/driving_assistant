@@ -30,7 +30,7 @@ const checkItems: CheckItem[] = [
   {
     key: 'milestoneScope',
     title: 'I understand GPS recording starts after permission is granted',
-    body: 'This milestone records raw GPS samples only. Camera, accelerometer, gyroscope, scoring, and AI coaching remain disabled.',
+    body: 'This milestone records raw GPS plus accelerometer and gyroscope samples only. Camera, scoring, and AI coaching remain disabled.',
   },
 ];
 
@@ -97,10 +97,10 @@ export function SessionSetupScreen({ isStartingSession, onBack, onStartSession, 
       <View style={styles.summaryCard}>
         <Text style={styles.summaryTitle}>What this session start does now</Text>
         <Text style={styles.summaryBody}>
-          Requests foreground location permission, then starts local GPS recording for timestamp, latitude, longitude, speed where available, and GPS accuracy.
+          Requests foreground location permission, then starts local GPS, accelerometer, and gyroscope recording with timestamped samples.
         </Text>
         <Text style={styles.summaryBody}>
-          It does not request camera or motion permissions, does not assess faults, and does not send data to backend services.
+          It does not request camera permissions, does not assess faults, and does not send data to backend services.
         </Text>
       </View>
 

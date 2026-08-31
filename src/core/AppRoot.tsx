@@ -7,6 +7,7 @@ import { OnboardingScreen } from '../screens/OnboardingScreen';
 import { SessionActiveScreen } from '../screens/SessionActiveScreen';
 import { SessionSetupScreen } from '../screens/SessionSetupScreen';
 import { useGpsSessionRecorder } from '../session/useGpsSessionRecorder';
+import { useMotionSessionRecorder } from '../session/useMotionSessionRecorder';
 import { getOnboardingCompleted, setOnboardingCompleted } from '../storage/onboardingStorage';
 import { ErrorBoundary } from './ErrorBoundary';
 
@@ -27,6 +28,11 @@ export function AppRoot() {
   const [currentScreen, setCurrentScreen] = useState<AppScreen>('home');
   const [activeSession, setActiveSession] = useState<LocalDrivingSession | null>(null);
   const { gpsState, startRecording, stopRecording } = useGpsSessionRecorder();
+  const {
+    motionState,
+    startRecording: startMotionRecording,
+    stopRecording: stopMotionRecording,
+  } = useMotionSessionRecorder();
 
   const loadOnboardingState = async () => {
     setHasError(false);
@@ -80,6 +86,8 @@ export function AppRoot() {
       return;
     }
 
+    await startMotionRecording();
+
     const session: LocalDrivingSession = {
       id: `session-${Date.now()}`,
       startedAt: new Date().toISOString(),
@@ -92,6 +100,7 @@ export function AppRoot() {
 
   const handleStopSession = () => {
     stopRecording('stopped', null);
+    stopMotionRecording();
     setActiveSession(null);
     setCurrentScreen('home');
     setSessionSetupError(null);
@@ -117,7 +126,7 @@ export function AppRoot() {
           />
         ) : null}
         {!isLoading && !hasError && hasCompletedOnboarding && currentScreen === 'session-active' && activeSession ? (
-          <SessionActiveScreen gpsState={gpsState} session={activeSession} onStopSession={handleStopSession} />
+          <SessionActiveScreen motionState={motionState} gpsState={gpsState} session={activeSession} onStopSession={handleStopSession} />
         ) : null}
         <StatusBar style="dark" />
       </SafeAreaView>

@@ -65,7 +65,7 @@ export function HomeScreen({ onStartSession }: HomeScreenProps) {
         <StatusCard
           label="Not active yet"
           title="Permissions and sensing"
-          body="Camera and motion-sensor permissions are deferred until later milestones."
+          body="Camera permissions are deferred until later milestones. Motion sensors run during active sessions."
         />
         <StatusCard
           label="Not active yet"

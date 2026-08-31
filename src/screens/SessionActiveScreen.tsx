@@ -1,9 +1,10 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import type { ActiveSessionGpsState } from '../session/models';
+import type { ActiveSessionGpsState, ActiveSessionMotionState, MotionRecordingStatus } from '../session/models';
 
 type SessionActiveScreenProps = {
   gpsState: ActiveSessionGpsState;
+  motionState: ActiveSessionMotionState;
   session: {
     id: string;
     startedAt: string;
@@ -11,7 +12,7 @@ type SessionActiveScreenProps = {
   onStopSession: () => void;
 };
 
-export function SessionActiveScreen({ gpsState, session, onStopSession }: SessionActiveScreenProps) {
+export function SessionActiveScreen({ gpsState, motionState, session, onStopSession }: SessionActiveScreenProps) {
   const startedAt = new Date(session.startedAt);
   const startedAtLabel = Number.isNaN(startedAt.getTime())
     ? 'Session active'
@@ -44,13 +45,15 @@ export function SessionActiveScreen({ gpsState, session, onStopSession }: Sessio
         : 'GPS accuracy acceptable';
 
   const gpsStatusLabel = getGpsStatusLabel(gpsState.status);
+  const accelerometerStatusLabel = getMotionStatusLabel(motionState.accelerometer.status);
+  const gyroscopeStatusLabel = getMotionStatusLabel(motionState.gyroscope.status);
 
   return (
     <ScrollView contentContainerStyle={styles.contentContainer} style={styles.screen}>
       <View style={styles.headerCard}>
         <Text style={styles.eyebrow}>Session Active</Text>
         <Text style={styles.title}>Practice session started</Text>
-        <Text style={styles.body}>GPS is recorded locally as raw evidence only. This screen does not interpret GPS as an RSA fault and does not run scoring.</Text>
+        <Text style={styles.body}>GPS and motion data are recorded locally as raw evidence only. This screen does not interpret data as an RSA fault and does not run scoring.</Text>
       </View>
 
       <View style={styles.statusCard}>
@@ -78,9 +81,40 @@ export function SessionActiveScreen({ gpsState, session, onStopSession }: Sessio
       ) : null}
 
       <View style={styles.statusCard}>
+        <Text style={styles.statusLabel}>Motion sensors</Text>
+        <Text style={styles.statusList}>Accelerometer: {accelerometerStatusLabel}</Text>
+        <Text style={styles.statusList}>Gyroscope: {gyroscopeStatusLabel}</Text>
+        <Text style={styles.statusList}>Accelerometer samples: {motionState.accelerometer.sampleCount}</Text>
+        <Text style={styles.statusList}>Gyroscope samples: {motionState.gyroscope.sampleCount}</Text>
+        <Text style={styles.statusList}>
+          Accelerometer magnitude (latest / peak): {formatMetric(motionState.accelerometer.latestMagnitude)} / {motionState.accelerometer.peakMagnitude.toFixed(2)}
+        </Text>
+        <Text style={styles.statusList}>
+          Gyroscope magnitude (latest / peak): {formatMetric(motionState.gyroscope.latestMagnitude)} / {motionState.gyroscope.peakMagnitude.toFixed(2)}
+        </Text>
+        <Text style={styles.statusList}>Accelerometer latest x/y/z: {formatAxes(motionState.accelerometer.latestSample)}</Text>
+        <Text style={styles.statusList}>Gyroscope latest x/y/z: {formatAxes(motionState.gyroscope.latestSample)}</Text>
+        <Text style={styles.statusMeta}>Raw x/y/z axes are recorded as measured by device orientation and are not vehicle-frame normalized.</Text>
+      </View>
+
+      {motionState.accelerometer.errorMessage ? (
+        <View style={styles.errorCard}>
+          <Text style={styles.errorTitle}>Accelerometer update</Text>
+          <Text style={styles.errorBody}>{motionState.accelerometer.errorMessage}</Text>
+        </View>
+      ) : null}
+
+      {motionState.gyroscope.errorMessage ? (
+        <View style={styles.errorCard}>
+          <Text style={styles.errorTitle}>Gyroscope update</Text>
+          <Text style={styles.errorBody}>{motionState.gyroscope.errorMessage}</Text>
+        </View>
+      ) : null}
+
+      <View style={styles.statusCard}>
         <Text style={styles.statusLabel}>Current scope</Text>
         <Text style={styles.statusList}>• No camera recording</Text>
-        <Text style={styles.statusList}>• No accelerometer or gyroscope capture</Text>
+        <Text style={styles.statusList}>• No event detection from raw motion data</Text>
         <Text style={styles.statusList}>• No scoring or AI feedback</Text>
         <Text style={styles.statusList}>• No backend or saved history</Text>
       </View>
@@ -90,6 +124,22 @@ export function SessionActiveScreen({ gpsState, session, onStopSession }: Sessio
       </Pressable>
     </ScrollView>
   );
+}
+
+function formatMetric(value: number | null): string {
+  if (value === null) {
+    return 'N/A';
+  }
+
+  return value.toFixed(2);
+}
+
+function formatAxes(sample: ActiveSessionMotionState['accelerometer']['latestSample']): string {
+  if (!sample) {
+    return 'N/A';
+  }
+
+  return `${sample.x.toFixed(2)} / ${sample.y.toFixed(2)} / ${sample.z.toFixed(2)}`;
 }
 
 function getGpsStatusLabel(status: ActiveSessionGpsState['status']): string {
@@ -107,6 +157,22 @@ function getGpsStatusLabel(status: ActiveSessionGpsState['status']): string {
     case 'idle':
     default:
       return 'GPS: Waiting to start';
+  }
+}
+
+function getMotionStatusLabel(status: MotionRecordingStatus): string {
+  switch (status) {
+    case 'recording':
+      return 'Recording';
+    case 'unavailable':
+      return 'Unavailable on this device';
+    case 'error':
+      return 'Data unavailable';
+    case 'stopped':
+      return 'Stopped';
+    case 'idle':
+    default:
+      return 'Waiting to start';
   }
 }
 

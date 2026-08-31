@@ -30,7 +30,7 @@ function toSample(location: Location.LocationObject): GpsSample {
   const speed = location.coords.speed;
 
   return {
-    timestamp: typeof location.timestamp === 'number' ? location.timestamp : Date.now(),
+    timestamp: Date.now(),
     latitude: location.coords.latitude,
     longitude: location.coords.longitude,
     accuracyMeters: typeof accuracy === 'number' && Number.isFinite(accuracy) ? accuracy : null,
