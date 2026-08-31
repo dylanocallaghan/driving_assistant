@@ -1,4 +1,6 @@
 import type { DrivingEventDetectionSnapshot, DeveloperSimulationScenario } from './eventModels';
+import { summarizeGpsSamples } from './gpsUtils';
+import { magnitudeFromMotionSample, summarizeMotionSamples } from './motionUtils';
 import type { ActiveSessionGpsState, ActiveSessionMotionState, GpsSample, MotionSample, MotionStreamState } from './models';
 
 export function applyDeveloperSimulationSnapshot(
@@ -150,6 +152,7 @@ function createGpsState(samples: GpsSample[]): ActiveSessionGpsState {
     latestAccuracyMeters: samples[samples.length - 1]?.accuracyMeters ?? null,
     elapsedSeconds: Math.max(0, Math.floor((samples[samples.length - 1]?.timestamp ?? 0 - (samples[0]?.timestamp ?? 0)) / 1000)),
     startedAtMs: samples[0]?.timestamp ?? null,
+    telemetrySummary: summarizeGpsSamples(samples),
   };
 }
 
@@ -169,12 +172,13 @@ function createMotionStreamState(samples: MotionSample[]): MotionStreamState {
     errorMessage: null,
     samples,
     sampleCount: samples.length,
+    invalidSampleCount: 0,
     latestSample,
-    latestMagnitude: latestSample ? Math.sqrt(latestSample.x * latestSample.x + latestSample.y * latestSample.y + latestSample.z * latestSample.z) : null,
+    latestMagnitude: latestSample ? magnitudeFromMotionSample(latestSample) : null,
     peakMagnitude: samples.reduce((peak, sample) => {
-      const magnitude = Math.sqrt(sample.x * sample.x + sample.y * sample.y + sample.z * sample.z);
-      return Math.max(peak, magnitude);
+      return Math.max(peak, magnitudeFromMotionSample(sample));
     }, 0),
+    telemetrySummary: summarizeMotionSamples(samples, 0),
   };
 }
 

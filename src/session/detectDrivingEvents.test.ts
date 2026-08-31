@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import { detectDrivingEvents } from './detectDrivingEvents';
 import type { DetectDrivingEventsInput } from './eventModels';
+import { summarizeGpsSamples } from './gpsUtils';
+import { summarizeMotionSamples } from './motionUtils';
 import type { ActiveSessionGpsState, ActiveSessionMotionState, GpsSample, MotionSample, MotionStreamState } from './models';
 
 function createGpsState(samples: GpsSample[]): ActiveSessionGpsState {
@@ -15,6 +17,7 @@ function createGpsState(samples: GpsSample[]): ActiveSessionGpsState {
     latestAccuracyMeters: samples[samples.length - 1]?.accuracyMeters ?? null,
     elapsedSeconds: 12,
     startedAtMs: samples[0]?.timestamp ?? null,
+    telemetrySummary: summarizeGpsSamples(samples),
   };
 }
 
@@ -24,6 +27,7 @@ function createMotionStreamState(samples: MotionSample[]): MotionStreamState {
     errorMessage: null,
     samples,
     sampleCount: samples.length,
+    invalidSampleCount: 0,
     latestSample: samples[samples.length - 1] ?? null,
     latestMagnitude: samples[samples.length - 1]
       ? Math.sqrt(
@@ -36,6 +40,7 @@ function createMotionStreamState(samples: MotionSample[]): MotionStreamState {
       const magnitude = Math.sqrt(sample.x * sample.x + sample.y * sample.y + sample.z * sample.z);
       return Math.max(peak, magnitude);
     }, 0),
+    telemetrySummary: summarizeMotionSamples(samples, 0),
   };
 }
 

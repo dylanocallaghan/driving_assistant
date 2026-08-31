@@ -3,11 +3,16 @@ import { Accelerometer, Gyroscope } from 'expo-sensors';
 
 import type {
   ActiveSessionMotionState,
-  MotionSample,
   MotionStreamState,
   StartMotionRecordingResult,
 } from './models';
-import { canStartMotionRecording } from './motionUtils';
+import {
+  canStartMotionRecording,
+  initialMotionTelemetrySummary,
+  magnitudeFromMotionSample,
+  summarizeMotionSamples,
+  toMotionSample,
+} from './motionUtils';
 
 const MOTION_UPDATE_INTERVAL_MS = 250;
 
@@ -16,9 +21,11 @@ const initialStreamState: MotionStreamState = {
   errorMessage: null,
   samples: [],
   sampleCount: 0,
+  invalidSampleCount: 0,
   latestSample: null,
   latestMagnitude: null,
   peakMagnitude: 0,
+  telemetrySummary: initialMotionTelemetrySummary,
 };
 
 const initialMotionState: ActiveSessionMotionState = {
@@ -28,19 +35,6 @@ const initialMotionState: ActiveSessionMotionState = {
 };
 
 type SensorSubscription = ReturnType<typeof Accelerometer.addListener>;
-
-function toMotionSample(reading: { x: number; y: number; z: number }): MotionSample {
-  return {
-    timestamp: Date.now(),
-    x: reading.x,
-    y: reading.y,
-    z: reading.z,
-  };
-}
-
-function magnitudeFromSample(sample: MotionSample): number {
-  return Math.sqrt(sample.x * sample.x + sample.y * sample.y + sample.z * sample.z);
-}
 
 function toErrorMessage(error: unknown): string {
   if (error instanceof Error && error.message) {
@@ -127,21 +121,41 @@ export function useMotionSessionRecorder() {
       } else {
         accelerometerSubscriptionRef.current = Accelerometer.addListener((reading) => {
           const sample = toMotionSample(reading);
-          const magnitude = magnitudeFromSample(sample);
 
-          setMotionState((previousState) => ({
-            ...previousState,
-            accelerometer: {
-              ...previousState.accelerometer,
-              status: 'recording',
-              errorMessage: null,
-              samples: [...previousState.accelerometer.samples, sample],
-              sampleCount: previousState.accelerometer.sampleCount + 1,
-              latestSample: sample,
-              latestMagnitude: magnitude,
-              peakMagnitude: Math.max(previousState.accelerometer.peakMagnitude, magnitude),
-            },
-          }));
+          setMotionState((previousState) => {
+            if (!sample) {
+              const invalidSampleCount = previousState.accelerometer.invalidSampleCount + 1;
+
+              return {
+                ...previousState,
+                accelerometer: {
+                  ...previousState.accelerometer,
+                  status: 'recording',
+                  errorMessage: null,
+                  invalidSampleCount,
+                  telemetrySummary: summarizeMotionSamples(previousState.accelerometer.samples, invalidSampleCount),
+                },
+              };
+            }
+
+            const nextSamples = [...previousState.accelerometer.samples, sample];
+            const magnitude = magnitudeFromMotionSample(sample);
+
+            return {
+              ...previousState,
+              accelerometer: {
+                ...previousState.accelerometer,
+                status: 'recording',
+                errorMessage: null,
+                samples: nextSamples,
+                sampleCount: nextSamples.length,
+                latestSample: sample,
+                latestMagnitude: magnitude,
+                peakMagnitude: Math.max(previousState.accelerometer.peakMagnitude, magnitude),
+                telemetrySummary: summarizeMotionSamples(nextSamples, previousState.accelerometer.invalidSampleCount),
+              },
+            };
+          });
         });
       }
     } catch (error) {
@@ -170,21 +184,41 @@ export function useMotionSessionRecorder() {
       } else {
         gyroscopeSubscriptionRef.current = Gyroscope.addListener((reading) => {
           const sample = toMotionSample(reading);
-          const magnitude = magnitudeFromSample(sample);
 
-          setMotionState((previousState) => ({
-            ...previousState,
-            gyroscope: {
-              ...previousState.gyroscope,
-              status: 'recording',
-              errorMessage: null,
-              samples: [...previousState.gyroscope.samples, sample],
-              sampleCount: previousState.gyroscope.sampleCount + 1,
-              latestSample: sample,
-              latestMagnitude: magnitude,
-              peakMagnitude: Math.max(previousState.gyroscope.peakMagnitude, magnitude),
-            },
-          }));
+          setMotionState((previousState) => {
+            if (!sample) {
+              const invalidSampleCount = previousState.gyroscope.invalidSampleCount + 1;
+
+              return {
+                ...previousState,
+                gyroscope: {
+                  ...previousState.gyroscope,
+                  status: 'recording',
+                  errorMessage: null,
+                  invalidSampleCount,
+                  telemetrySummary: summarizeMotionSamples(previousState.gyroscope.samples, invalidSampleCount),
+                },
+              };
+            }
+
+            const nextSamples = [...previousState.gyroscope.samples, sample];
+            const magnitude = magnitudeFromMotionSample(sample);
+
+            return {
+              ...previousState,
+              gyroscope: {
+                ...previousState.gyroscope,
+                status: 'recording',
+                errorMessage: null,
+                samples: nextSamples,
+                sampleCount: nextSamples.length,
+                latestSample: sample,
+                latestMagnitude: magnitude,
+                peakMagnitude: Math.max(previousState.gyroscope.peakMagnitude, magnitude),
+                telemetrySummary: summarizeMotionSamples(nextSamples, previousState.gyroscope.invalidSampleCount),
+              },
+            };
+          });
         });
       }
     } catch (error) {

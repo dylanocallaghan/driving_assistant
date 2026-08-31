@@ -3,8 +3,10 @@ import { describe, expect, it } from 'vitest';
 import {
   calculateElapsedSeconds,
   initialGpsState,
+  initialGpsTelemetrySummary,
   normalizeGpsAccuracyMeters,
   normalizeGpsSpeedMps,
+  summarizeGpsSamples,
   toGpsErrorMessage,
   toGpsSample,
 } from './gpsUtils';
@@ -14,6 +16,7 @@ describe('initialGpsState', () => {
     expect(initialGpsState.status).toBe('idle');
     expect(initialGpsState.sampleCount).toBe(0);
     expect(initialGpsState.latestSpeedMps).toBeNull();
+    expect(initialGpsState.telemetrySummary).toEqual(initialGpsTelemetrySummary);
   });
 });
 
@@ -104,5 +107,31 @@ describe('toGpsErrorMessage', () => {
 
   it('returns a fallback message for unknown errors', () => {
     expect(toGpsErrorMessage('gps failed')).toBe('GPS data unavailable. Please try again.');
+  });
+});
+
+describe('summarizeGpsSamples', () => {
+  it('returns the initial summary for empty samples', () => {
+    expect(summarizeGpsSamples([])).toEqual(initialGpsTelemetrySummary);
+  });
+
+  it('summarizes location continuity and speed availability for scored-session inputs', () => {
+    expect(
+      summarizeGpsSamples([
+        { timestamp: 1000, latitude: 53.34, longitude: -6.26, accuracyMeters: 7, speedMps: 5 },
+        { timestamp: 2500, latitude: 53.34005, longitude: -6.25995, accuracyMeters: 8, speedMps: null },
+        { timestamp: 5000, latitude: 53.3401, longitude: -6.2599, accuracyMeters: 9, speedMps: 7 },
+      ]),
+    ).toEqual({
+      latestLocation: {
+        latitude: 53.3401,
+        longitude: -6.2599,
+      },
+      validSpeedSampleCount: 2,
+      invalidSpeedSampleCount: 1,
+      maxRecordedSpeedMps: 7,
+      averageRecordedSpeedMps: 6,
+      largestSampleGapMs: 2500,
+    });
   });
 });

@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { applyDeveloperSimulationSnapshot } from './developerSimulation';
 import { deriveDrivingEventDetectionState } from './eventDetectionState';
 import type { DrivingEventDetectionSnapshot, DeveloperSimulationScenario } from './eventModels';
+import { initialGpsTelemetrySummary } from './gpsUtils';
+import { initialMotionTelemetrySummary } from './motionUtils';
 import type { ActiveSessionGpsState, ActiveSessionMotionState, MotionStreamState } from './models';
 
 const emptyGpsState: ActiveSessionGpsState = {
@@ -15,6 +17,7 @@ const emptyGpsState: ActiveSessionGpsState = {
   latestAccuracyMeters: null,
   elapsedSeconds: 0,
   startedAtMs: null,
+  telemetrySummary: initialGpsTelemetrySummary,
 };
 
 const emptyMotionStream: MotionStreamState = {
@@ -22,9 +25,11 @@ const emptyMotionStream: MotionStreamState = {
   errorMessage: null,
   samples: [],
   sampleCount: 0,
+  invalidSampleCount: 0,
   latestSample: null,
   latestMagnitude: null,
   peakMagnitude: 0,
+  telemetrySummary: initialMotionTelemetrySummary,
 };
 
 const emptyMotionState: ActiveSessionMotionState = {

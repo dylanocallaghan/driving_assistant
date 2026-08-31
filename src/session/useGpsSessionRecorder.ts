@@ -3,7 +3,7 @@ import { AppState } from 'react-native';
 import * as Location from 'expo-location';
 
 import { distanceBetweenSamplesMeters } from './distance';
-import { calculateElapsedSeconds, initialGpsState, toGpsErrorMessage, toGpsSample } from './gpsUtils';
+import { calculateElapsedSeconds, initialGpsState, summarizeGpsSamples, toGpsErrorMessage, toGpsSample } from './gpsUtils';
 import type { ActiveSessionGpsState, GpsRecordingStatus, GpsSample, StartGpsRecordingResult } from './models';
 
 export function useGpsSessionRecorder() {
@@ -112,6 +112,7 @@ export function useGpsSessionRecorder() {
           const sample = toGpsSample(locationUpdate);
 
           setGpsState((previousState) => {
+            const nextSamples = [...previousState.samples, sample];
             let nextDistanceMeters = previousState.distanceMeters;
 
             if (lastSampleRef.current) {
@@ -124,12 +125,13 @@ export function useGpsSessionRecorder() {
               ...previousState,
               status: 'recording',
               errorMessage: null,
-              samples: [...previousState.samples, sample],
-              sampleCount: previousState.sampleCount + 1,
+              samples: nextSamples,
+              sampleCount: nextSamples.length,
               distanceMeters: nextDistanceMeters,
               latestSpeedMps: sample.speedMps,
               latestAccuracyMeters: sample.accuracyMeters,
               elapsedSeconds: calculateElapsedSeconds(previousState.startedAtMs),
+              telemetrySummary: summarizeGpsSamples(nextSamples),
             };
           });
         },

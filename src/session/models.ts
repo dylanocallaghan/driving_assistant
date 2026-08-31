@@ -14,6 +14,18 @@ export type GpsSample = {
   speedMps: number | null;
 };
 
+export type GpsTelemetrySummary = {
+  latestLocation: {
+    latitude: number;
+    longitude: number;
+  } | null;
+  validSpeedSampleCount: number;
+  invalidSpeedSampleCount: number;
+  maxRecordedSpeedMps: number | null;
+  averageRecordedSpeedMps: number | null;
+  largestSampleGapMs: number;
+};
+
 export type MotionRecordingStatus = 'idle' | 'recording' | 'unavailable' | 'error' | 'stopped';
 
 export type MotionSample = {
@@ -23,14 +35,24 @@ export type MotionSample = {
   z: number;
 };
 
+export type MotionTelemetrySummary = {
+  averageMagnitude: number | null;
+  invalidSampleCount: number;
+  largestSampleGapMs: number;
+  latestTimestamp: number | null;
+  validSampleCount: number;
+};
+
 export type MotionStreamState = {
   status: MotionRecordingStatus;
   errorMessage: string | null;
   samples: MotionSample[];
   sampleCount: number;
+  invalidSampleCount: number;
   latestSample: MotionSample | null;
   latestMagnitude: number | null;
   peakMagnitude: number;
+  telemetrySummary: MotionTelemetrySummary;
 };
 
 export type ActiveSessionMotionState = {
@@ -49,6 +71,7 @@ export type ActiveSessionGpsState = {
   latestAccuracyMeters: number | null;
   elapsedSeconds: number;
   startedAtMs: number | null;
+  telemetrySummary: GpsTelemetrySummary;
 };
 
 export type StartGpsRecordingResult =

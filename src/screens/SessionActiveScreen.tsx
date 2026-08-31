@@ -33,6 +33,20 @@ export function SessionActiveScreen({ eventDetectionState, gpsState, motionState
 
   const distanceKilometers = gpsState.distanceMeters / 1000;
   const distanceLabel = distanceKilometers >= 1 ? `${distanceKilometers.toFixed(2)} km` : `${gpsState.distanceMeters.toFixed(0)} m`;
+  const averageSpeedLabel =
+    gpsState.telemetrySummary.averageRecordedSpeedMps === null
+      ? 'GPS speed unavailable'
+      : `${(gpsState.telemetrySummary.averageRecordedSpeedMps * 3.6).toFixed(1)} km/h`;
+  const maxSpeedLabel =
+    gpsState.telemetrySummary.maxRecordedSpeedMps === null
+      ? 'GPS speed unavailable'
+      : `${(gpsState.telemetrySummary.maxRecordedSpeedMps * 3.6).toFixed(1)} km/h`;
+  const latestLocationLabel = gpsState.telemetrySummary.latestLocation
+    ? `${gpsState.telemetrySummary.latestLocation.latitude.toFixed(5)}, ${gpsState.telemetrySummary.latestLocation.longitude.toFixed(5)}`
+    : 'GPS location unavailable';
+  const continuityLabel = gpsState.telemetrySummary.largestSampleGapMs > 5000
+    ? `Gap detected (${gpsState.telemetrySummary.largestSampleGapMs} ms)`
+    : `${gpsState.telemetrySummary.largestSampleGapMs} ms max gap`;
 
   const speedLabel =
     gpsState.latestSpeedMps === null
@@ -54,6 +68,14 @@ export function SessionActiveScreen({ eventDetectionState, gpsState, motionState
   const gpsStatusLabel = getGpsStatusLabel(gpsState.status);
   const accelerometerStatusLabel = getMotionStatusLabel(motionState.accelerometer.status);
   const gyroscopeStatusLabel = getMotionStatusLabel(motionState.gyroscope.status);
+  const accelerometerAverageMagnitudeLabel =
+    motionState.accelerometer.telemetrySummary.averageMagnitude === null
+      ? 'N/A'
+      : motionState.accelerometer.telemetrySummary.averageMagnitude.toFixed(2);
+  const gyroscopeAverageMagnitudeLabel =
+    motionState.gyroscope.telemetrySummary.averageMagnitude === null
+      ? 'N/A'
+      : motionState.gyroscope.telemetrySummary.averageMagnitude.toFixed(2);
 
   return (
     <ScrollView contentContainerStyle={styles.contentContainer} style={styles.screen}>
@@ -75,9 +97,16 @@ export function SessionActiveScreen({ eventDetectionState, gpsState, motionState
         <Text style={styles.statusList}>Session duration: {durationLabel}</Text>
         <Text style={styles.statusList}>Distance travelled: {distanceLabel}</Text>
         <Text style={styles.statusList}>GPS speed recorded: {speedLabel}</Text>
+        <Text style={styles.statusList}>Average GPS speed: {averageSpeedLabel}</Text>
+        <Text style={styles.statusList}>Peak GPS speed: {maxSpeedLabel}</Text>
         <Text style={styles.statusList}>GPS accuracy: {accuracyLabel}</Text>
         <Text style={styles.statusList}>Accuracy quality: {accuracyQuality}</Text>
         <Text style={styles.statusList}>GPS sample count: {gpsState.sampleCount}</Text>
+        <Text style={styles.statusList}>Valid speed samples: {gpsState.telemetrySummary.validSpeedSampleCount}</Text>
+        <Text style={styles.statusList}>Unavailable speed samples: {gpsState.telemetrySummary.invalidSpeedSampleCount}</Text>
+        <Text style={styles.statusList}>Latest location: {latestLocationLabel}</Text>
+        <Text style={styles.statusList}>GPS continuity: {continuityLabel}</Text>
+        <Text style={styles.statusMeta}>Speed and location telemetry remain local and in-memory only in this milestone.</Text>
       </View>
 
       {gpsState.errorMessage ? (
@@ -101,6 +130,12 @@ export function SessionActiveScreen({ eventDetectionState, gpsState, motionState
         </Text>
         <Text style={styles.statusList}>Accelerometer latest x/y/z: {formatMotionAxes(motionState.accelerometer.latestSample)}</Text>
         <Text style={styles.statusList}>Gyroscope latest x/y/z: {formatMotionAxes(motionState.gyroscope.latestSample)}</Text>
+        <Text style={styles.statusList}>Accelerometer average magnitude: {accelerometerAverageMagnitudeLabel}</Text>
+        <Text style={styles.statusList}>Gyroscope average magnitude: {gyroscopeAverageMagnitudeLabel}</Text>
+        <Text style={styles.statusList}>Accelerometer invalid samples: {motionState.accelerometer.invalidSampleCount}</Text>
+        <Text style={styles.statusList}>Gyroscope invalid samples: {motionState.gyroscope.invalidSampleCount}</Text>
+        <Text style={styles.statusList}>Accelerometer continuity: {motionState.accelerometer.telemetrySummary.largestSampleGapMs} ms max gap</Text>
+        <Text style={styles.statusList}>Gyroscope continuity: {motionState.gyroscope.telemetrySummary.largestSampleGapMs} ms max gap</Text>
         <Text style={styles.statusMeta}>Raw x/y/z axes are recorded as measured by device orientation and are not vehicle-frame normalized.</Text>
       </View>
 
