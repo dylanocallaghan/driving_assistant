@@ -7,7 +7,10 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "IrishDrive AI uses your location during a practice session to record raw GPS speed, distance travelled, and GPS accuracy."
+      }
     },
     "android": {
       "adaptiveIcon": {

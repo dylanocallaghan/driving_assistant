@@ -34,7 +34,7 @@ export function HomeScreen({ onStartSession }: HomeScreenProps) {
         <View style={styles.noticeCard}>
           <Text style={styles.noticeTitle}>Session setup available</Text>
           <Text style={styles.noticeBody}>
-            Start session now opens the pre-drive flow. Camera, GPS, sensors, scoring, and recording are still inactive until later milestones.
+            Start session now opens the pre-drive flow. GPS recording starts in the active session after location permission is granted.
           </Text>
         </View>
       </View>
@@ -58,9 +58,14 @@ export function HomeScreen({ onStartSession }: HomeScreenProps) {
           body="Pre-drive flow, session lifecycle, and required checks are reserved for Milestone 4."
         />
         <StatusCard
+          label="Now active"
+          title="GPS recording"
+          body="Active sessions record raw GPS samples locally, including timestamp, location, speed where available, and GPS accuracy."
+        />
+        <StatusCard
           label="Not active yet"
           title="Permissions and sensing"
-          body="Camera, GPS, and motion permissions are deferred until the roadmap reaches those milestones."
+          body="Camera and motion-sensor permissions are deferred until later milestones."
         />
         <StatusCard
           label="Not active yet"

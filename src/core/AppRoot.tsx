@@ -6,6 +6,7 @@ import { HomeScreen } from '../screens/HomeScreen';
 import { OnboardingScreen } from '../screens/OnboardingScreen';
 import { SessionActiveScreen } from '../screens/SessionActiveScreen';
 import { SessionSetupScreen } from '../screens/SessionSetupScreen';
+import { useGpsSessionRecorder } from '../session/useGpsSessionRecorder';
 import { getOnboardingCompleted, setOnboardingCompleted } from '../storage/onboardingStorage';
 import { ErrorBoundary } from './ErrorBoundary';
 
@@ -20,9 +21,12 @@ export function AppRoot() {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isStartingSession, setIsStartingSession] = useState(false);
+  const [sessionSetupError, setSessionSetupError] = useState<string | null>(null);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
   const [currentScreen, setCurrentScreen] = useState<AppScreen>('home');
   const [activeSession, setActiveSession] = useState<LocalDrivingSession | null>(null);
+  const { gpsState, startRecording, stopRecording } = useGpsSessionRecorder();
 
   const loadOnboardingState = async () => {
     setHasError(false);
@@ -56,14 +60,26 @@ export function AppRoot() {
   };
 
   const handleOpenSessionSetup = () => {
+    setSessionSetupError(null);
     setCurrentScreen('session-setup');
   };
 
   const handleCancelSessionSetup = () => {
+    setSessionSetupError(null);
     setCurrentScreen('home');
   };
 
-  const handleStartSession = () => {
+  const handleStartSession = async () => {
+    setIsStartingSession(true);
+    setSessionSetupError(null);
+
+    const gpsStartResult = await startRecording();
+    if (!gpsStartResult.ok) {
+      setSessionSetupError(gpsStartResult.message);
+      setIsStartingSession(false);
+      return;
+    }
+
     const session: LocalDrivingSession = {
       id: `session-${Date.now()}`,
       startedAt: new Date().toISOString(),
@@ -71,11 +87,14 @@ export function AppRoot() {
 
     setActiveSession(session);
     setCurrentScreen('session-active');
+    setIsStartingSession(false);
   };
 
   const handleStopSession = () => {
+    stopRecording('stopped', null);
     setActiveSession(null);
     setCurrentScreen('home');
+    setSessionSetupError(null);
   };
 
   return (
@@ -90,10 +109,15 @@ export function AppRoot() {
           <HomeScreen onStartSession={handleOpenSessionSetup} />
         ) : null}
         {!isLoading && !hasError && hasCompletedOnboarding && currentScreen === 'session-setup' ? (
-          <SessionSetupScreen onBack={handleCancelSessionSetup} onStartSession={handleStartSession} />
+          <SessionSetupScreen
+            isStartingSession={isStartingSession}
+            onBack={handleCancelSessionSetup}
+            onStartSession={handleStartSession}
+            startErrorMessage={sessionSetupError}
+          />
         ) : null}
         {!isLoading && !hasError && hasCompletedOnboarding && currentScreen === 'session-active' && activeSession ? (
-          <SessionActiveScreen session={activeSession} onStopSession={handleStopSession} />
+          <SessionActiveScreen gpsState={gpsState} session={activeSession} onStopSession={handleStopSession} />
         ) : null}
         <StatusBar style="dark" />
       </SafeAreaView>

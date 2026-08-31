@@ -2,8 +2,10 @@ import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 type SessionSetupScreenProps = {
+  isStartingSession: boolean;
   onBack: () => void;
-  onStartSession: () => void;
+  onStartSession: () => Promise<void>;
+  startErrorMessage: string | null;
 };
 
 type CheckKey = 'mounted' | 'stationary' | 'milestoneScope';
@@ -27,12 +29,12 @@ const checkItems: CheckItem[] = [
   },
   {
     key: 'milestoneScope',
-    title: 'I understand this milestone does not record or assess driving yet',
-    body: 'Camera, GPS, sensors, telemetry, scoring, and AI coaching are not active in Session Setup. Those belong to later milestones.',
+    title: 'I understand GPS recording starts after permission is granted',
+    body: 'This milestone records raw GPS samples only. Camera, accelerometer, gyroscope, scoring, and AI coaching remain disabled.',
   },
 ];
 
-export function SessionSetupScreen({ onBack, onStartSession }: SessionSetupScreenProps) {
+export function SessionSetupScreen({ isStartingSession, onBack, onStartSession, startErrorMessage }: SessionSetupScreenProps) {
   const [checks, setChecks] = useState<Record<CheckKey, boolean>>({
     mounted: false,
     stationary: false,
@@ -94,21 +96,35 @@ export function SessionSetupScreen({ onBack, onStartSession }: SessionSetupScree
 
       <View style={styles.summaryCard}>
         <Text style={styles.summaryTitle}>What this session start does now</Text>
-        <Text style={styles.summaryBody}>Creates a local in-app session state and opens an active-session screen.</Text>
-        <Text style={styles.summaryBody}>It does not request permissions, capture telemetry, assess driving, or persist session history.</Text>
+        <Text style={styles.summaryBody}>
+          Requests foreground location permission, then starts local GPS recording for timestamp, latitude, longitude, speed where available, and GPS accuracy.
+        </Text>
+        <Text style={styles.summaryBody}>
+          It does not request camera or motion permissions, does not assess faults, and does not send data to backend services.
+        </Text>
       </View>
 
+      {startErrorMessage ? (
+        <View style={styles.errorCard}>
+          <Text style={styles.errorTitle}>Unable to start GPS recording</Text>
+          <Text style={styles.errorBody}>{startErrorMessage}</Text>
+          <Text style={styles.errorBody}>You can retry after enabling location access.</Text>
+        </View>
+      ) : null}
+
       <View style={styles.actionsRow}>
-        <Pressable accessibilityRole="button" onPress={onBack} style={styles.secondaryButton}>
+        <Pressable accessibilityRole="button" disabled={isStartingSession} onPress={onBack} style={[styles.secondaryButton, isStartingSession ? styles.buttonDisabled : null]}>
           <Text style={styles.secondaryButtonText}>Back to home</Text>
         </Pressable>
         <Pressable
           accessibilityRole="button"
-          disabled={!allChecksCompleted}
-          onPress={onStartSession}
-          style={[styles.primaryButton, !allChecksCompleted ? styles.buttonDisabled : null]}
+          disabled={!allChecksCompleted || isStartingSession}
+          onPress={() => {
+            void onStartSession();
+          }}
+          style={[styles.primaryButton, !allChecksCompleted || isStartingSession ? styles.buttonDisabled : null]}
         >
-          <Text style={styles.primaryButtonText}>Start practice session</Text>
+          <Text style={styles.primaryButtonText}>{isStartingSession ? 'Starting session...' : 'Start practice session'}</Text>
         </Pressable>
       </View>
     </ScrollView>
@@ -234,6 +250,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 21,
     color: '#164e63',
+  },
+  errorCard: {
+    backgroundColor: '#fef2f2',
+    borderRadius: 20,
+    padding: 18,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: '#fecaca',
+  },
+  errorTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#991b1b',
+  },
+  errorBody: {
+    fontSize: 14,
+    lineHeight: 21,
+    color: '#7f1d1d',
   },
   actionsRow: {
     flexDirection: 'row',
