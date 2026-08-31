@@ -1,19 +1,25 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { DeveloperTestingPanel } from './DeveloperTestingPanel';
+import type { DrivingEventDetectionState } from '../session/eventModels';
+import type { DeveloperSimulationScenario } from '../session/eventModels';
 import type { ActiveSessionGpsState, ActiveSessionMotionState, MotionRecordingStatus } from '../session/models';
 import { formatMotionAxes, formatMotionMagnitude } from '../session/motionUtils';
 
 type SessionActiveScreenProps = {
+  eventDetectionState: DrivingEventDetectionState;
   gpsState: ActiveSessionGpsState;
   motionState: ActiveSessionMotionState;
   session: {
     id: string;
     startedAt: string;
   };
+  onClearSimulation: () => void;
+  onSimulateScenario: (scenario: DeveloperSimulationScenario) => void;
   onStopSession: () => void;
 };
 
-export function SessionActiveScreen({ gpsState, motionState, session, onStopSession }: SessionActiveScreenProps) {
+export function SessionActiveScreen({ eventDetectionState, gpsState, motionState, session, onClearSimulation, onSimulateScenario, onStopSession }: SessionActiveScreenProps) {
   const startedAt = new Date(session.startedAt);
   const startedAtLabel = Number.isNaN(startedAt.getTime())
     ? 'Session active'
@@ -113,12 +119,51 @@ export function SessionActiveScreen({ gpsState, motionState, session, onStopSess
       ) : null}
 
       <View style={styles.statusCard}>
+        <Text style={styles.statusLabel}>Event detection</Text>
+        <Text style={styles.statusValue}>{eventDetectionState.status === 'detecting' ? 'Monitoring telemetry' : 'Waiting for session'}</Text>
+        <Text style={styles.statusList}>Detected events: {eventDetectionState.eventCount}</Text>
+        <Text style={styles.statusList}>Data-quality warnings: {eventDetectionState.warningCount}</Text>
+        <Text style={styles.statusList}>Developer simulation: {eventDetectionState.developerSimulationScenario ? 'Active' : 'Off'}</Text>
+        <Text style={styles.statusMeta}>Events are IrishDrive telemetry events only. They do not claim an RSA fault, score, or pass/fail outcome.</Text>
+      </View>
+
+      {eventDetectionState.events.length > 0 ? (
+        <View style={styles.statusCard}>
+          <Text style={styles.statusLabel}>Detected events</Text>
+          {eventDetectionState.events.map((event, index) => (
+            <Text key={`${event.eventType}-${event.startTime}-${index}`} style={styles.statusList}>
+              • {event.eventType} ({event.severity}, confidence {event.confidence.toFixed(2)})
+            </Text>
+          ))}
+        </View>
+      ) : null}
+
+      <View style={styles.statusCard}>
+        <Text style={styles.statusLabel}>Data quality</Text>
+        {eventDetectionState.warnings.length > 0 ? (
+          eventDetectionState.warnings.map((warning, index) => (
+            <Text key={`${warning.eventType}-${warning.startTime}-${index}`} style={styles.statusList}>
+              • {warning.eventType.replaceAll('_', ' ')}
+            </Text>
+          ))
+        ) : (
+          <Text style={styles.statusList}>No current telemetry coverage warnings.</Text>
+        )}
+      </View>
+
+      <View style={styles.statusCard}>
         <Text style={styles.statusLabel}>Current scope</Text>
         <Text style={styles.statusList}>• No camera recording</Text>
-        <Text style={styles.statusList}>• No event detection from raw motion data</Text>
+        <Text style={styles.statusList}>• No scoring from detected events</Text>
         <Text style={styles.statusList}>• No scoring or AI feedback</Text>
         <Text style={styles.statusList}>• No backend or saved history</Text>
       </View>
+
+      <DeveloperTestingPanel
+        eventDetectionState={eventDetectionState}
+        onClearSimulation={onClearSimulation}
+        onSimulateScenario={onSimulateScenario}
+      />
 
       <Pressable accessibilityRole="button" onPress={onStopSession} style={styles.stopButton}>
         <Text style={styles.stopButtonText}>Stop session</Text>

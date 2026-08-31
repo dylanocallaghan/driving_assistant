@@ -6,6 +6,8 @@ import { HomeScreen } from '../screens/HomeScreen';
 import { OnboardingScreen } from '../screens/OnboardingScreen';
 import { SessionActiveScreen } from '../screens/SessionActiveScreen';
 import { SessionSetupScreen } from '../screens/SessionSetupScreen';
+import type { DeveloperSimulationScenario } from '../session/eventModels';
+import { useDrivingEventDetection } from '../session/useDrivingEventDetection';
 import { useGpsSessionRecorder } from '../session/useGpsSessionRecorder';
 import { useMotionSessionRecorder } from '../session/useMotionSessionRecorder';
 import { getOnboardingCompleted, setOnboardingCompleted } from '../storage/onboardingStorage';
@@ -27,12 +29,19 @@ export function AppRoot() {
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
   const [currentScreen, setCurrentScreen] = useState<AppScreen>('home');
   const [activeSession, setActiveSession] = useState<LocalDrivingSession | null>(null);
+  const [developerSimulationScenario, setDeveloperSimulationScenario] = useState<DeveloperSimulationScenario | null>(null);
   const { gpsState, startRecording, stopRecording } = useGpsSessionRecorder();
   const {
     motionState,
     startRecording: startMotionRecording,
     stopRecording: stopMotionRecording,
   } = useMotionSessionRecorder();
+  const eventDetectionState = useDrivingEventDetection({
+    sessionId: activeSession?.id ?? null,
+    gpsState,
+    motionState,
+    developerSimulationScenario,
+  });
 
   const loadOnboardingState = async () => {
     setHasError(false);
@@ -66,11 +75,13 @@ export function AppRoot() {
   };
 
   const handleOpenSessionSetup = () => {
+    setDeveloperSimulationScenario(null);
     setSessionSetupError(null);
     setCurrentScreen('session-setup');
   };
 
   const handleCancelSessionSetup = () => {
+    setDeveloperSimulationScenario(null);
     setSessionSetupError(null);
     setCurrentScreen('home');
   };
@@ -93,6 +104,7 @@ export function AppRoot() {
       startedAt: new Date().toISOString(),
     };
 
+    setDeveloperSimulationScenario(null);
     setActiveSession(session);
     setCurrentScreen('session-active');
     setIsStartingSession(false);
@@ -101,9 +113,18 @@ export function AppRoot() {
   const handleStopSession = () => {
     stopRecording('stopped', null);
     stopMotionRecording();
+    setDeveloperSimulationScenario(null);
     setActiveSession(null);
     setCurrentScreen('home');
     setSessionSetupError(null);
+  };
+
+  const handleSimulateScenario = (scenario: DeveloperSimulationScenario) => {
+    setDeveloperSimulationScenario(scenario);
+  };
+
+  const handleClearSimulation = () => {
+    setDeveloperSimulationScenario(null);
   };
 
   return (
@@ -126,7 +147,15 @@ export function AppRoot() {
           />
         ) : null}
         {!isLoading && !hasError && hasCompletedOnboarding && currentScreen === 'session-active' && activeSession ? (
-          <SessionActiveScreen motionState={motionState} gpsState={gpsState} session={activeSession} onStopSession={handleStopSession} />
+          <SessionActiveScreen
+            eventDetectionState={eventDetectionState}
+            motionState={motionState}
+            gpsState={gpsState}
+            session={activeSession}
+            onClearSimulation={handleClearSimulation}
+            onSimulateScenario={handleSimulateScenario}
+            onStopSession={handleStopSession}
+          />
         ) : null}
         <StatusBar style="dark" />
       </SafeAreaView>

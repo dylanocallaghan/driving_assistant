@@ -34,7 +34,7 @@ function toSample(location: Location.LocationObject): GpsSample {
     latitude: location.coords.latitude,
     longitude: location.coords.longitude,
     accuracyMeters: typeof accuracy === 'number' && Number.isFinite(accuracy) ? accuracy : null,
-    speedMps: typeof speed === 'number' && Number.isFinite(speed) ? speed : null,
+    speedMps: typeof speed === 'number' && Number.isFinite(speed) && speed >= 0 ? speed : null,
   };
 }
 
