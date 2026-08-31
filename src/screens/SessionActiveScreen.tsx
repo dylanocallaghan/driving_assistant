@@ -1,6 +1,7 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import type { ActiveSessionGpsState, ActiveSessionMotionState, MotionRecordingStatus } from '../session/models';
+import { formatMotionAxes, formatMotionMagnitude } from '../session/motionUtils';
 
 type SessionActiveScreenProps = {
   gpsState: ActiveSessionGpsState;
@@ -87,13 +88,13 @@ export function SessionActiveScreen({ gpsState, motionState, session, onStopSess
         <Text style={styles.statusList}>Accelerometer samples: {motionState.accelerometer.sampleCount}</Text>
         <Text style={styles.statusList}>Gyroscope samples: {motionState.gyroscope.sampleCount}</Text>
         <Text style={styles.statusList}>
-          Accelerometer magnitude (latest / peak): {formatMetric(motionState.accelerometer.latestMagnitude)} / {motionState.accelerometer.peakMagnitude.toFixed(2)}
+          Accelerometer magnitude (latest / peak): {formatMotionMagnitude(motionState.accelerometer.latestMagnitude)} / {motionState.accelerometer.peakMagnitude.toFixed(2)}
         </Text>
         <Text style={styles.statusList}>
-          Gyroscope magnitude (latest / peak): {formatMetric(motionState.gyroscope.latestMagnitude)} / {motionState.gyroscope.peakMagnitude.toFixed(2)}
+          Gyroscope magnitude (latest / peak): {formatMotionMagnitude(motionState.gyroscope.latestMagnitude)} / {motionState.gyroscope.peakMagnitude.toFixed(2)}
         </Text>
-        <Text style={styles.statusList}>Accelerometer latest x/y/z: {formatAxes(motionState.accelerometer.latestSample)}</Text>
-        <Text style={styles.statusList}>Gyroscope latest x/y/z: {formatAxes(motionState.gyroscope.latestSample)}</Text>
+        <Text style={styles.statusList}>Accelerometer latest x/y/z: {formatMotionAxes(motionState.accelerometer.latestSample)}</Text>
+        <Text style={styles.statusList}>Gyroscope latest x/y/z: {formatMotionAxes(motionState.gyroscope.latestSample)}</Text>
         <Text style={styles.statusMeta}>Raw x/y/z axes are recorded as measured by device orientation and are not vehicle-frame normalized.</Text>
       </View>
 
@@ -124,22 +125,6 @@ export function SessionActiveScreen({ gpsState, motionState, session, onStopSess
       </Pressable>
     </ScrollView>
   );
-}
-
-function formatMetric(value: number | null): string {
-  if (value === null) {
-    return 'N/A';
-  }
-
-  return value.toFixed(2);
-}
-
-function formatAxes(sample: ActiveSessionMotionState['accelerometer']['latestSample']): string {
-  if (!sample) {
-    return 'N/A';
-  }
-
-  return `${sample.x.toFixed(2)} / ${sample.y.toFixed(2)} / ${sample.z.toFixed(2)}`;
 }
 
 function getGpsStatusLabel(status: ActiveSessionGpsState['status']): string {

@@ -7,6 +7,7 @@ import type {
   MotionStreamState,
   StartMotionRecordingResult,
 } from './models';
+import { canStartMotionRecording } from './motionUtils';
 
 const MOTION_UPDATE_INTERVAL_MS = 250;
 
@@ -85,7 +86,12 @@ export function useMotionSessionRecorder() {
   }, [clearSubscriptions]);
 
   const startRecording = useCallback(async (): Promise<StartMotionRecordingResult> => {
-    if (accelerometerSubscriptionRef.current || gyroscopeSubscriptionRef.current) {
+    if (
+      !canStartMotionRecording(
+        accelerometerSubscriptionRef.current !== null,
+        gyroscopeSubscriptionRef.current !== null,
+      )
+    ) {
       return { ok: true };
     }
 
