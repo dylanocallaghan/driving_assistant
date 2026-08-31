@@ -6,11 +6,14 @@ import { HomeScreen } from '../screens/HomeScreen';
 import { OnboardingScreen } from '../screens/OnboardingScreen';
 import { SessionActiveScreen } from '../screens/SessionActiveScreen';
 import { SessionSetupScreen } from '../screens/SessionSetupScreen';
+import { createCompletedDrivingSession } from '../session/completedSession';
 import type { DeveloperSimulationScenario } from '../session/eventModels';
+import { deriveDrivingEventDetectionState } from '../session/eventDetectionState';
 import { useCameraPermissionState } from '../session/useCameraPermissionState';
 import { useDrivingEventDetection } from '../session/useDrivingEventDetection';
 import { useGpsSessionRecorder } from '../session/useGpsSessionRecorder';
 import { useMotionSessionRecorder } from '../session/useMotionSessionRecorder';
+import { listCompletedDrivingSessions, saveCompletedDrivingSession } from '../storage/completedSessionStorage';
 import { getOnboardingCompleted, setOnboardingCompleted } from '../storage/onboardingStorage';
 import { ErrorBoundary } from './ErrorBoundary';
 
@@ -27,6 +30,8 @@ export function AppRoot() {
   const [isSaving, setIsSaving] = useState(false);
   const [isStartingSession, setIsStartingSession] = useState(false);
   const [sessionSetupError, setSessionSetupError] = useState<string | null>(null);
+  const [sessionStorageStatusMessage, setSessionStorageStatusMessage] = useState<string | null>(null);
+  const [storedSessionCount, setStoredSessionCount] = useState(0);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
   const [currentScreen, setCurrentScreen] = useState<AppScreen>('home');
   const [activeSession, setActiveSession] = useState<LocalDrivingSession | null>(null);
@@ -68,6 +73,19 @@ export function AppRoot() {
     void loadOnboardingState();
   }, []);
 
+  const refreshStoredSessionCount = async () => {
+    try {
+      const completedSessions = await listCompletedDrivingSessions();
+      setStoredSessionCount(completedSessions.length);
+    } catch {
+      setSessionStorageStatusMessage('Unable to load saved sessions.');
+    }
+  };
+
+  useEffect(() => {
+    void refreshStoredSessionCount();
+  }, []);
+
   const handleCompleteOnboarding = async () => {
     setIsSaving(true);
 
@@ -84,6 +102,7 @@ export function AppRoot() {
   const handleOpenSessionSetup = () => {
     setDeveloperSimulationScenario(null);
     setSessionSetupError(null);
+    setSessionStorageStatusMessage(null);
     setCurrentScreen('session-setup');
   };
 
@@ -118,6 +137,36 @@ export function AppRoot() {
   };
 
   const handleStopSession = () => {
+    if (activeSession) {
+      const completedSessionResult = createCompletedDrivingSession({
+        endedAt: new Date().toISOString(),
+        eventDetectionState: deriveDrivingEventDetectionState({
+          sessionId: activeSession.id,
+          gpsState,
+          motionState,
+          developerSimulationScenario: null,
+        }),
+        gpsState,
+        motionState,
+        sessionId: activeSession.id,
+        startedAt: activeSession.startedAt,
+      });
+
+      if (completedSessionResult.ok) {
+        void (async () => {
+          try {
+            await saveCompletedDrivingSession(completedSessionResult.session);
+            setSessionStorageStatusMessage('Completed session saved locally for future results and history.');
+            await refreshStoredSessionCount();
+          } catch {
+            setSessionStorageStatusMessage('Unable to save the completed session locally.');
+          }
+        })();
+      } else {
+        setSessionStorageStatusMessage(completedSessionResult.message);
+      }
+    }
+
     stopRecording('stopped', null);
     stopMotionRecording();
     setDeveloperSimulationScenario(null);
@@ -143,7 +192,11 @@ export function AppRoot() {
           <OnboardingScreen isSaving={isSaving} onComplete={handleCompleteOnboarding} />
         ) : null}
         {!isLoading && !hasError && hasCompletedOnboarding && currentScreen === 'home' ? (
-          <HomeScreen onStartSession={handleOpenSessionSetup} />
+          <HomeScreen
+            onStartSession={handleOpenSessionSetup}
+            sessionStorageStatusMessage={sessionStorageStatusMessage}
+            storedSessionCount={storedSessionCount}
+          />
         ) : null}
         {!isLoading && !hasError && hasCompletedOnboarding && currentScreen === 'session-setup' ? (
           <SessionSetupScreen

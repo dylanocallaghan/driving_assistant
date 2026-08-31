@@ -10,9 +10,11 @@ type StatusCardProps = {
 
 type HomeScreenProps = {
   onStartSession: () => void;
+  sessionStorageStatusMessage: string | null;
+  storedSessionCount: number;
 };
 
-export function HomeScreen({ onStartSession }: HomeScreenProps) {
+export function HomeScreen({ onStartSession, sessionStorageStatusMessage, storedSessionCount }: HomeScreenProps) {
 
   return (
     <ScrollView contentContainerStyle={styles.contentContainer} style={styles.screen}>
@@ -37,6 +39,13 @@ export function HomeScreen({ onStartSession }: HomeScreenProps) {
             Start session now opens the pre-drive flow. GPS recording starts in the active session after location permission is granted.
           </Text>
         </View>
+
+        {sessionStorageStatusMessage ? (
+          <View style={styles.storageNoticeCard}>
+            <Text style={styles.storageNoticeTitle}>Local session storage</Text>
+            <Text style={styles.storageNoticeBody}>{sessionStorageStatusMessage}</Text>
+          </View>
+        ) : null}
       </View>
 
       <View style={styles.section}>
@@ -66,6 +75,11 @@ export function HomeScreen({ onStartSession }: HomeScreenProps) {
           label="Available now"
           title="Permissions and sensing"
           body="Camera permission can now be reviewed in session setup. Camera capture still remains disabled while GPS and motion sensors run during active sessions."
+        />
+        <StatusCard
+          label="Available now"
+          title="Completed session storage"
+          body={`${storedSessionCount} completed session${storedSessionCount === 1 ? '' : 's'} stored locally for future results and history views.`}
         />
         <StatusCard
           label="Not active yet"
@@ -150,6 +164,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 21,
     color: '#164e63',
+  },
+  storageNoticeCard: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 16,
+    padding: 16,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#dbe4ee',
+  },
+  storageNoticeTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  storageNoticeBody: {
+    fontSize: 14,
+    lineHeight: 21,
+    color: '#475569',
   },
   section: {
     gap: 6,
